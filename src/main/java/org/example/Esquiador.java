@@ -1,27 +1,33 @@
 package org.example;
 
+import java.util.concurrent.Semaphore;
+
 public class Esquiador extends Thread {
     private final int id;
-    private final Aerosilla silla;
+    private Semaphore sillaDisponible;
+
+    private Semaphore capacidadSilla;
 
 
-    public Esquiador(int id, Aerosilla silla) {
+    public Esquiador(int id, Semaphore sillaDisponible, Semaphore capacidadSilla) {
         this.id = id;
-        this.silla = silla;
-
+        this.sillaDisponible = sillaDisponible;
+        this.capacidadSilla = capacidadSilla;
     }
 
     @Override
     public void run() {
-        while (true) {
             try {
-                silla.tomarSilla(); // El esquiador toma una silla
+                System.out.println("llega el esquiador: " + id + " a la fila");
+                sillaDisponible.acquire(); // El esquiador toma una silla
+                System.out.println("el esquiador: " + id + " subio a la silla");
+                capacidadSilla.release();
+
                 Thread.sleep(1000);
-                silla.liberarSilla(); // El esquiador libera la silla en la cima
-                Thread.sleep(2000);
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
+
     }
 }

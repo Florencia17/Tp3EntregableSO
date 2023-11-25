@@ -1,38 +1,52 @@
 package org.example;
+
+
 import java.util.concurrent.Semaphore;
 
 
-public class Aerosilla {
-    private final int N; // Número de esquiadores
-    private final int M; // Número de sillas
-    private Semaphore sillasDisponibles; // Semáforo para las sillas disponibles
-    private Semaphore mutex; // Semáforo para la exclusión mutua
+public class Aerosilla implements Runnable {
+    private Semaphore sillaDisponible; // Semáforo para las sillas disponibles
+    private Semaphore mutex; // Semáforo para la exclusión mutua, entre sillas
+    private Semaphore mutexCima;
+    private Semaphore capacidadSilla;
 
-    public Aerosilla(int N, int M) {
-        this.N = N;
-        this.M = M;
-        this.sillasDisponibles = new Semaphore(M * 4); // capacidad para M sillas que son cuadruples
-        this.mutex = new Semaphore(1);
+    private int id;
+
+    public Aerosilla(int id, Semaphore sillaDisponible, Semaphore mutex, Semaphore capacidadSilla, Semaphore mutexCima) {
+        this.id = id;
+        this.sillaDisponible = sillaDisponible;
+        this.mutex = mutex;
+        this.capacidadSilla = capacidadSilla;
+        this.mutexCima = mutexCima;
     }
 
-    public void iniciarSimulacion() {
-        for (int i = 1; i <= N; i++) {
-            Esquiador esquiador = new Esquiador(i, this);
-            esquiador.start();
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                System.out.println("LLega la silla: " + id);
+                mutex.acquire();
+                for (int i = 1; i <= 4; i++) {
+                    sillaDisponible.release();
+                }
+                for (int i = 1; i <= 4; i++) {
+                    capacidadSilla.acquire();
+                }
+                System.out.println("Esquiadores subiendo en la silla: " + id);
+                Thread.sleep(1000);
+                System.out.println("Silla: " + id + " Subiendo a la cima");
+                mutex.release();
+                Thread.sleep(1000);
+                mutexCima.acquire();
+                System.out.println("Los esquiados estan bajando de la silla: " + id);
+                System.out.println("La silla " + id + " esta volviendo ");
+                mutexCima.release();
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    public void tomarSilla() throws InterruptedException {
-        sillasDisponibles.acquire();
-        mutex.acquire();
-        System.out.println("Esquiador " + Thread.currentThread().getId() + " toma una silla.");
-        mutex.release();
-    }
 
-    public void liberarSilla() throws InterruptedException {
-        mutex.acquire();
-        System.out.println("Esquiador " + Thread.currentThread().getId() + " libera la silla.");
-        mutex.release();
-        sillasDisponibles.release();
-    }
 }
